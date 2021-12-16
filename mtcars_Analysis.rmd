@@ -2,29 +2,86 @@
 title: "mtcars_Analysis"
 author: "Ash Thompson"
 date: "16 December 2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Regression Models Course Project
+## Executive Summary
+This report is an analysis of the mtcars dataset, to explore the relationship betweena set of variables and miles per gallon (MPG). 
+Particularly interested in answering the following two questions:
+- Is an automatic or manual transmission better for MPG
+- Quantify the MPG difference between automatic and manual transmissions
 
-## R Markdown
+## Initial steps
+The first steps are to load the dataset and supporting libraries, then perform some minor transformations and exploratory analysis.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r initial_steps, message=FALSE}
+data(mtcars)
+library(ggplot2)
+library(dplyr)
+head(mtcars)
+mtcars$am <- factor(mtcars$am, labels =c("Automatic", "Manual"))
+```
+Please see appendix 1 for a box plot of the 2 transmission types and a comparison of mpg, that shows just
+looking at transmission type, it appears manual transmission gives around 7 more mpg.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Using linear regression to investigate further
+These steps are to investigate the hypothesis that manual transmission gives 7 more 
+mpg. First a simple linear model.
 
-```{r cars}
-summary(cars)
+```{r model1}
+model1 <- lm(mpg ~ am, data=mtcars)
+summary(model1)
 ```
 
-## Including Plots
+R squared value is fairly low at 0.3385, so only around 34% of the variance can 
+be explained by this model. the next steps are to include the other variables into
+the model and do an analysis of variance to determine the best variables to include
+in a final model.
 
-You can also embed plots, for example:
+``` {r model2}
+model2 <- lm(mpg ~ ., data=mtcars)
+summary(model2)
+summary(aov(mpg ~ ., data=mtcars))
+```
+The variables cyl, disp and wt are significant enough to include in the model, in addition to 
+transmission type.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+``` {r model3}
+model3 <- lm(mpg ~ am + cyl + disp + wt, data=mtcars)
+summary(model3)
+```
+Please see appendix 2 for the plot of residuals showing they have roughly the same variance.
+The Normal Q-Q plot shows that the distribution of residuals is normal.
+
+## Conclusion
+Manual transmission, taking other variables into account, gives a slightly higher MPG value of approximately 0.1. But number of cylinders and 
+weight have more of an effect, cylinders lowering it by around 1.7 and wt lowering by 3.5.
+
+## Appendix 1
+```{r appendix1, echo=FALSE}
+#summary of manual transmission mpg
+print("Manual")
+summary(select(filter(mtcars, am=="Manual"),mpg))
+
+#mean of automatic transmission mpg
+print("Automatic")
+summary(select(filter(mtcars, am=="Automatic"),mpg))
+
+boxplot(mpg ~ am, data = mtcars, col = (c("green","yellow")), ylab = "mpg(Miles Per Gallon)", xlab = "am(Transmission Type)")
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Appendix 2
+
+```{r appendix2, echo=FALSE}
+par(mfrow = c(2, 2))
+plot(model3)
+
+```
+
